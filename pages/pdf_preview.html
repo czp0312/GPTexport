@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF &#x9884;&#x89c8; - GPT &#x5BF9;&#x8BDD;&#x5BFC;&#x51FA;</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --panel: rgba(255, 255, 255, 0.92);
+      --border: rgba(17, 24, 39, 0.10);
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --shadow: 0 12px 30px rgba(17, 24, 39, 0.10);
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(120% 90% at 10% 0%, #f6fbff, transparent 55%),
+                  radial-gradient(120% 90% at 100% 20%, #f7f8ff, transparent 55%),
+                  linear-gradient(180deg, #ffffff, #f7fafc);
+      color: var(--text);
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+    }
+    .bar {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 12px 16px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .title strong { font-size: 14px; }
+    .title span { color: var(--muted); font-size: 12px; }
+    .actions { display: flex; gap: 10px; align-items: center; }
+    #openPdfBtn { display: none; }
+    button {
+      border: 1px solid var(--border);
+      background: var(--primary);
+      color: #fff;
+      border-radius: 12px;
+      padding: 9px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.18);
+    }
+    button:hover { background: var(--primary-hover); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .ghost {
+      background: #fff;
+      color: var(--text);
+    }
+    .ghost:hover { background: #f3f4f6; }
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    .status {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      font-size: 13px;
+      box-shadow: var(--shadow);
+    }
+    #pdf-content {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    @media print {
+      header { display: none; }
+      main { max-width: none; padding: 0; }
+      #pdf-content { border: none; border-radius: 0; padding: 0; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+
+    #pdf-content h1 { margin: 0 0 18px; padding-bottom: 10px; border-bottom: 2px solid #4CAF50; }
+    #pdf-content h2 { margin: 18px 0 10px; }
+    #pdf-content p { margin: 10px 0; }
+    #pdf-content ul, #pdf-content ol { padding-left: 24px; margin: 8px 0; }
+    #pdf-content li { margin: 4px 0; }
+    #pdf-content pre { background: #f6f8fa; padding: 12px; border-radius: 6px; overflow-x: auto; }
+    #pdf-content code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    #pdf-content :not(pre) > code { background: #f6f8fa; padding: 0 4px; border-radius: 4px; }
+    #pdf-content blockquote { margin: 10px 0; padding-left: 12px; border-left: 4px solid #ddd; color: #555; }
+    #pdf-content hr { margin: 18px 0; border: 0; border-top: 1px solid #eee; }
+    #pdf-content a { color: #1976D2; text-decoration: none; }
+    #pdf-content img { max-width: 100%; height: auto; }
+    .plain { white-space: pre-wrap; word-break: break-word; }
+
+    #pdf-content pre,
+    #pdf-content blockquote,
+    #pdf-content table,
+    #pdf-content img {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    #pdf-content h1,
+    #pdf-content h2,
+    #pdf-content h3 {
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+
+    /* Minimal KaTeX layout CSS (avoid one-symbol-per-line without bundling full KaTeX) */
+    .katex, .katex-display { white-space: nowrap; }
+    .katex { display: inline-block; font: normal 1.1em serif; line-height: 1.2; text-indent: 0; }
+    .katex .katex-html { display: inline-block; }
+    .katex .base { display: inline-block; }
+    .katex .strut { display: inline-block; }
+    .katex .mord, .katex .mbin, .katex .mrel, .katex .mopen, .katex .mclose, .katex .mpunct, .katex .minner { display: inline-block; }
+    .katex-display { display: block; margin: 10px 0; text-align: center; }
+    .katex-display > .katex { display: inline-block; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <div class="title">
+        <strong>PDF &#x9884;&#x89c8;</strong>
+        <span id="subtitle">&#x52A0;&#x8F7D;&#x4E2D;...</span>
+      </div>
+      <div class="actions">
+        <button id="printToPdfBtn">&#x9AD8;&#x8D28;&#x91CF;&#x4E0B;&#x8F7D; (&#x63A8;&#x8350;)</button>
+        <button id="openPdfBtn" class="ghost">&#x5FEB;&#x901F;&#x4E0B;&#x8F7D;</button>
+        <button id="closeBtn" class="ghost">&#x5173;&#x95ED;</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="status" id="status">&#x6B63;&#x5728;&#x8BFB;&#x53D6;&#x5BF9;&#x8BDD;&#x5185;&#x5BB9;...</div>
+    <div id="pdf-content"></div>
+  </main>
+
+  <script src="../src/pdf_preview.js"></script>
+</body>
+</html>
