@@ -7,8 +7,7 @@
     "activeTab",
     "scripting",
     "downloads",
-    "storage",
-    "debugger"
+    "storage"
   ],
   "host_permissions": [
     "*://chat.openai.com/*",

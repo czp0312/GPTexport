@@ -51,27 +51,30 @@
 
   function extractHtmlForTurn(turnEl) {
     const htmlSelectors = ['.markdown', '[class*="markdown"]', '.prose', '.whitespace-pre-wrap'];
-    let container = null;
+    let containers = [];
     for (const sel of htmlSelectors) {
-      const el = turnEl.querySelector(sel);
-      if (el) {
-        container = el;
-        break;
-      }
+      const els = Array.from(turnEl.querySelectorAll(sel));
+      const topLevel = els.filter(el => !els.some(o => o !== el && o.contains(el)));
+      if (topLevel.length) { containers = topLevel; break; }
     }
-    const target = container || turnEl;
-    const clone = target.cloneNode(true);
-    clone.querySelectorAll('button, [role=\"button\"], svg, textarea, input, select, [data-testid=\"copy-button\"]').forEach(el => el.remove());
-    return clone.innerHTML || '';
+    if (!containers.length) containers = [turnEl];
+    const parts = containers.map(target => {
+      const clone = target.cloneNode(true);
+      clone.querySelectorAll('button, [role=\"button\"], svg, textarea, input, select, [data-testid=\"copy-button\"]').forEach(el => el.remove());
+      return clone.innerHTML || '';
+    });
+    return parts.filter(Boolean).join('\n');
   }
 
   function extractTextForTurn(turnEl) {
     const textSelectors = ['.markdown', '[class*="markdown"]', '.prose', '.whitespace-pre-wrap'];
     for (const sel of textSelectors) {
-      const el = turnEl.querySelector(sel);
-      if (el) {
-        const txt = normalizeExtractedText(el.innerText || el.textContent, 20000);
-        if (txt) return txt;
+      const els = Array.from(turnEl.querySelectorAll(sel));
+      const topLevel = els.filter(el => !els.some(o => o !== el && o.contains(el)));
+      if (topLevel.length) {
+        const parts = topLevel.map(el => normalizeExtractedText(el.innerText || el.textContent, 20000));
+        const combined = parts.filter(Boolean).join('\n\n');
+        if (combined) return combined;
       }
     }
     const clone = turnEl.cloneNode(true);
@@ -111,12 +114,45 @@
   }
 
   function extractGeminiDialogues() {
-    const candidates = Array.from(document.querySelectorAll('[role=\"article\"], [role=\"listitem\"], .conversation-container, main'));
-    const dialogues = [];
-    for (const el of candidates) {
-      const txt = normalizeExtractedText(el.innerText || el.textContent, 8000);
-      if (txt.length < 20 || txt.length > 8000) continue;
-      dialogues.push({ role: 'unknown', text: txt, html: el.innerHTML || txt });
+    // Gemini uses custom elements for conversation turns
+    var geminiSelectors = [
+      'model-response, user-query',
+      'message-content',
+      '[data-message-id]',
+      '.conversation-turn'
+    ];
+
+    var turns = [];
+    for (var si = 0; si < geminiSelectors.length; si++) {
+      var found = Array.from(document.querySelectorAll(geminiSelectors[si]));
+      var topLevel = found.filter(function(el) {
+        return !found.some(function(o) { return o !== el && o.contains(el); });
+      });
+      if (topLevel.length) { turns = topLevel; break; }
+    }
+
+    // Fallback: article/listitem but skip sidebar/nav areas
+    if (!turns.length) {
+      turns = Array.from(document.querySelectorAll('[role=\"article\"], [role=\"listitem\"], .conversation-container'))
+        .filter(function(el) {
+          if (el.closest('nav, [role=\"navigation\"], aside, [role=\"complementary\"], [role=\"tablist\"]')) return false;
+          var txt = (el.innerText || el.textContent || '').trim();
+          return txt.length >= 20 && txt.length <= 8000;
+        });
+    }
+
+    var dialogues = [];
+    for (var i = 0; i < turns.length; i++) {
+      var el = turns[i];
+      var tag = el.tagName ? el.tagName.toLowerCase() : '';
+      var role = 'unknown';
+      if (tag === 'user-query') role = 'user';
+      else if (tag === 'model-response') role = 'assistant';
+
+      var text = extractTextForTurn(el);
+      if (!text || text.length < 20) continue;
+      var html = extractHtmlForTurn(el) || text;
+      dialogues.push({ role: role, text: text, html: html });
     }
     return dialogues.slice(0, 200);
   }
@@ -238,31 +274,56 @@
     btn.textContent = '\u5bfc\u51fa';
     btn.style.cssText = [
       'position:fixed',
-      'right:18px',
-      'bottom:86px',
+      'right:20px',
+      'bottom:80px',
       'z-index:2147483646',
-      'padding:10px 14px',
-      'border-radius:999px',
-      'border:1px solid rgba(17,24,39,0.16)',
-      'background:linear-gradient(135deg,#2563eb,#7c3aed)',
+      'padding:9px 20px',
+      'border-radius:20px',
+      'border:none',
+      'background:#4f46e5',
       'color:#fff',
-      'font-weight:700',
-      'box-shadow:0 12px 26px rgba(17,24,39,0.22)',
+      'font-weight:600',
+      'box-shadow:0 2px 8px rgba(79,70,229,0.3),0 1px 3px rgba(0,0,0,0.08)',
       'cursor:pointer',
-      'font-size:14px',
+      'font-size:13px',
       'line-height:1',
       'user-select:none',
-      '-webkit-font-smoothing:antialiased'
+      '-webkit-font-smoothing:antialiased',
+      'transition:all 0.25s ease',
+      'letter-spacing:0.01em'
     ].join(';');
 
     btn.addEventListener('mouseenter', () => {
-      btn.style.background = 'linear-gradient(135deg,#1d4ed8,#6d28d9)';
+      btn.style.background = '#4338ca';
+      btn.style.transform = 'translateY(-1px)';
+      btn.style.boxShadow = '0 4px 12px rgba(79,70,229,0.35),0 2px 4px rgba(0,0,0,0.08)';
     });
     btn.addEventListener('mouseleave', () => {
-      btn.style.background = 'linear-gradient(135deg,#2563eb,#7c3aed)';
+      btn.style.background = '#4f46e5';
+      btn.style.transform = 'translateY(0)';
+      btn.style.boxShadow = '0 2px 8px rgba(79,70,229,0.3),0 1px 3px rgba(0,0,0,0.08)';
     });
-    btn.addEventListener('click', () => {
-      chrome.runtime.sendMessage({ action: 'openPopup' });
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      try {
+        chrome.runtime.sendMessage({
+          action: 'openPopup',
+          sw: screen.availWidth,
+          sh: screen.availHeight
+        }, (resp) => {
+          if (chrome.runtime.lastError || !resp?.ok) {
+            btn.textContent = '\u5237\u65b0\u91cd\u8bd5';
+            btn.style.background = '#dc2626';
+            btn.style.boxShadow = '0 2px 8px rgba(220,38,38,0.3),0 1px 3px rgba(0,0,0,0.08)';
+            setTimeout(() => { btn.textContent = '\u5bfc\u51fa'; btn.style.background = '#4f46e5'; btn.style.boxShadow = '0 2px 8px rgba(79,70,229,0.3),0 1px 3px rgba(0,0,0,0.08)'; }, 2500);
+          }
+        });
+      } catch (_) {
+        btn.textContent = '\u5237\u65b0\u91cd\u8bd5';
+        btn.style.background = '#dc2626';
+        btn.style.boxShadow = '0 2px 8px rgba(220,38,38,0.3),0 1px 3px rgba(0,0,0,0.08)';
+        setTimeout(() => { btn.textContent = '\u5bfc\u51fa'; btn.style.background = '#4f46e5'; btn.style.boxShadow = '0 2px 8px rgba(79,70,229,0.3),0 1px 3px rgba(0,0,0,0.08)'; }, 2500);
+      }
     });
 
     (document.body || document.documentElement).appendChild(btn);

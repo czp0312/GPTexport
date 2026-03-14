@@ -198,29 +198,18 @@ function getJobId() {
 }
 
 function buildHtml(dialogues) {
-  let html = `
-    <div style="margin-bottom: 10px;">
-      <h1>GPT \u5bf9\u8bdd\u8bb0\u5f55</h1>
-    </div>
-  `;
+  let html = `<div style="margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid #e5e7eb;font-size:11pt;font-weight:600;color:#374151;">GPT \u5bf9\u8bdd\u8bb0\u5f55</div>`;
 
   dialogues.forEach((d, index) => {
     const body = sanitizeHtmlFragment(d.html || d.text || '');
-    html += `
-      <section class="dialogue">
-        <h2>\u5bf9\u8bdd ${index + 1}</h2>
-        ${d.role ? `<p style="font-weight: bold; color: #2196F3;">Role: ${escapeHtml(d.role)}</p>` : ''}
-        <div>${body}</div>
-        <hr />
-      </section>
-    `;
+    const roleLower = String(d.role || '').toLowerCase();
+    const isUser = roleLower === 'user' || roleLower === 'human';
+    const roleLabel = isUser ? '\u7528\u6237' : '\u52a9\u624b';
+    const roleBg = isUser ? 'background:#f3f4f6;padding:8px 10px;border-radius:4px;' : '';
+    html += `<section style="margin:10px 0 4px;${roleBg}"><div style="font-size:8pt;font-weight:600;color:#6b7280;margin:0 0 3px;">${roleLabel}</div><div style="font-size:9pt;line-height:1.6;">${body}</div></section>`;
   });
 
-  html += `
-    <div style="margin-top: 18px; text-align: center; color: #888; font-size: 0.9em;">
-      \u5bfc\u51fa\u4e8e ${escapeHtml(new Date().toLocaleString('zh-CN'))}
-    </div>
-  `;
+  html += `<div style="margin-top:12px;text-align:center;color:#9ca3af;font-size:8pt;">\u5bfc\u51fa\u4e8e ${escapeHtml(new Date().toLocaleString('zh-CN'))}</div>`;
 
   return html;
 }
@@ -258,16 +247,16 @@ async function generatePdfBlob(element) {
   await new Promise(r => setTimeout(r, 50));
 
   const opt = {
-    margin: [10, 10, 10, 10],
+    margin: [8, 8, 8, 8],
     filename: `gpt_dialogues_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
+    image: { type: 'jpeg', quality: 0.92 },
     enableLinks: true,
     pagebreak: {
       mode: ['avoid-all', 'css', 'legacy'],
-      avoid: ['pre', 'blockquote', 'table', 'img', 'h1', 'h2', 'h3', '.katex', '.katex-display', 'mjx-container']
+      avoid: ['pre', 'blockquote', 'table', 'img']
     },
     html2canvas: {
-      scale: 2,
+      scale: 1.5,
       useCORS: true,
       // letterRendering 鍦ㄩ儴鍒嗗瓧浣?璇█浼氬鑷村瓧闂磋窛寮傚父鎴栭噸鍙?      letterRendering: false,
       logging: false,
@@ -362,49 +351,53 @@ async function prepareSourcePrintDom(tabId, dialogues) {
       style.textContent = `
         #${rootId} { position: fixed; left: 0; top: 0; width: 980px; max-width: 98vw; opacity: 0; pointer-events: none; contain: layout paint style; }
         @media print {
-          @page { size: A4; margin: 10mm; }
+          @page { size: A4; margin: 8mm; }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           body > * { display: none !important; }
           body > #${rootId} { display: block !important; }
           #${rootId} { position: static !important; width: auto !important; max-width: none !important; opacity: 1 !important; pointer-events: auto !important; }
 
           #${rootId}, #${rootId} * { box-sizing: border-box; }
-          #${rootId} { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Arial, sans-serif; color: #111827; line-height: 1.6; font-size: 12pt; letter-spacing: normal; word-spacing: normal; text-rendering: optimizeLegibility; }
+          #${rootId} { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Arial, sans-serif; color: #111827; line-height: 1.4; font-size: 9pt; letter-spacing: normal; word-spacing: normal; text-rendering: optimizeLegibility; }
           #${rootId} * { letter-spacing: normal !important; word-spacing: normal !important; transform: none !important; filter: none !important; }
           #${rootId} p, #${rootId} li { orphans: 3; widows: 3; }
           #${rootId} p, #${rootId} li, #${rootId} blockquote, #${rootId} table { overflow-wrap: break-word; word-break: normal; hyphens: auto; }
-          #${rootId} h1 { margin: 0 0 18px; padding-bottom: 10px; border-bottom: 2px solid #4CAF50; }
-          #${rootId} h2 { margin: 18px 0 10px; page-break-after: avoid; break-after: avoid; }
-          #${rootId} p { margin: 10px 0; }
-          #${rootId} ul, #${rootId} ol { padding-left: 24px; margin: 8px 0; }
-          #${rootId} li { margin: 4px 0; }
-          #${rootId} code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 10.5pt; }
-          #${rootId} pre { background: #f6f8fa; padding: 12px; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
-          #${rootId} blockquote { margin: 10px 0; padding-left: 12px; border-left: 4px solid #ddd; color: #555; }
+          #${rootId} .doc-title { font-size: 11pt; font-weight: 600; margin: 0 0 6px; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; color: #111827; }
+          #${rootId} .role-label { font-size: 7.5pt; font-weight: 600; color: #6b7280; margin: 0 0 2px; }
+          #${rootId} h1 { font-size: 12pt; font-weight: 700; margin: 12px 0 5px; page-break-after: avoid; break-after: avoid; }
+          #${rootId} h2 { font-size: 10.5pt; font-weight: 600; margin: 10px 0 4px; page-break-after: avoid; break-after: avoid; }
+          #${rootId} h3 { font-size: 9.5pt; font-weight: 600; margin: 8px 0 3px; page-break-after: avoid; break-after: avoid; }
+          #${rootId} h4 { font-size: 9pt; font-weight: 600; margin: 6px 0 2px; page-break-after: avoid; break-after: avoid; }
+          #${rootId} h5, #${rootId} h6 { font-size: 9pt; font-weight: 600; margin: 6px 0 2px; color: #555; }
+          #${rootId} p { margin: 3px 0; }
+          #${rootId} ul, #${rootId} ol { padding-left: 16px; margin: 2px 0; }
+          #${rootId} li { margin: 1px 0; }
+          #${rootId} code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 8pt; }
+          #${rootId} pre { background: #f6f8fa; padding: 8px; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+          #${rootId} blockquote { margin: 4px 0; padding-left: 8px; border-left: 3px solid #ddd; color: #555; }
           #${rootId} table, #${rootId} img { break-inside: avoid; page-break-inside: avoid; }
           #${rootId} .katex-display, #${rootId} mjx-container { break-inside: avoid; page-break-inside: avoid; }
           #${rootId} .katex, #${rootId} .katex *, #${rootId} mjx-container, #${rootId} mjx-container * { overflow-wrap: normal !important; word-break: normal !important; }
           #${rootId} .katex, #${rootId} .katex-display { white-space: nowrap !important; }
-          #${rootId} hr { margin: 18px 0; border: 0; border-top: 1px solid #eee; }
-          #${rootId} a { color: #1976D2; text-decoration: none; }
+          #${rootId} hr { margin: 6px 0; border: 0; border-top: 1px solid #eee; }
+          #${rootId} a { color: #111827; text-decoration: underline; }
           #${rootId} .gpt-export-plain { white-space: pre-wrap; word-break: break-word; }
+          #${rootId} section { margin: 8px 0 4px; }
+          #${rootId} section.user-section { background: #f9fafb; padding: 6px 8px; border-radius: 4px; }
         }
       `;
 
       const safeDialogues = Array.isArray(ds) ? ds : [];
-      let html = `<div style="margin-bottom: 10px;"><h1>GPT \u5bf9\u8bdd\u8bb0\u5f55</h1></div>`;
+      let html = `<div class="doc-title" style="font-size:11pt;font-weight:600;margin:0 0 6px;padding-bottom:4px;border-bottom:1px solid #e5e7eb;color:#111827;">GPT \u5bf9\u8bdd\u8bb0\u5f55</div>`;
       for (let i = 0; i < safeDialogues.length; i++) {
         const d = safeDialogues[i] || {};
-        const role = d.role ? escapeHtml(d.role) : '';
+        const roleLower = String(d.role || '').toLowerCase();
+        const isUser = roleLower === 'user' || roleLower === 'human';
+        const roleLabel = isUser ? '\u7528\u6237' : '\u52a9\u624b';
+        const sectionCls = isUser ? 'user-section' : '';
+        const roleBg = isUser ? 'background:#f9fafb;padding:6px 8px;border-radius:4px;' : '';
         const body = sanitizeFragment(d.html || d.text || '');
-        html += `
-          <section>
-            <h2>\u5bf9\u8bdd ${i + 1}</h2>
-            ${role ? `<p style="font-weight: bold; color: #2563eb;">Role: ${role}</p>` : ''}
-            <div>${body}</div>
-            <hr />
-          </section>
-        `;
+        html += `<section class="${sectionCls}" style="margin:8px 0 4px;${roleBg}"><div class="role-label" style="font-size:7.5pt;font-weight:600;color:#6b7280;margin:0 0 2px;">${roleLabel}</div><div style="font-size:9pt;line-height:1.5;">${body}</div></section>`;
       }
       root.innerHTML = html;
 
@@ -437,39 +430,39 @@ async function cleanupSourcePrintDom(tabId) {
 
 async function printToPdfAndDownload(sourceTabId, dialogues, filename, report) {
   const tabId = Number(sourceTabId);
-  if (!Number.isFinite(tabId)) throw new Error('缂哄皯婧愰〉闈㈡爣绛鹃〉');
-
+  if (!Number.isFinite(tabId)) throw new Error('\u7f3a\u5c11\u6e90\u9875\u9762\u6807\u7b7e\u9875');
 
   let debuggerAttached = false;
   const reportSafe = typeof report === 'function' ? report : () => {};
   try {
-    reportSafe('Attaching to source tab...');
-    await withTimeout(debuggerAttachEnsured(tabId), 9000, 'Attach timed out');
+    reportSafe('\u6b63\u5728\u51c6\u5907...');
+    await withTimeout(debuggerAttachEnsured(tabId), 5000, 'Attach timed out');
     debuggerAttached = true;
 
-    reportSafe('Preparing print content...');
-    const prepared = await withTimeout(
-      prepareSourcePrintDom(tabId, dialogues),
-      15000,
-      'Preparing print DOM timed out'
-    );
+    reportSafe('\u6b63\u5728\u6392\u7248...\uff08\u9876\u90e8\u8c03\u8bd5\u63d0\u793a\u4e3a\u6b63\u5e38\u6d41\u7a0b\uff09');
+    // Prepare DOM and enable debugger domains in parallel
+    const [prepared] = await Promise.all([
+      withTimeout(prepareSourcePrintDom(tabId, dialogues), 8000, 'Preparing print DOM timed out'),
+      withTimeout(Promise.all([
+        debuggerSendEnsured(tabId, 'Page.enable'),
+        debuggerSendEnsured(tabId, 'Runtime.enable')
+      ]), 6000, 'Enable timed out')
+    ]);
     if (!prepared?.ok) throw new Error('Failed to prepare print content');
 
-
-    reportSafe('Initializing print engine...');
-    await withTimeout(debuggerSendEnsured(tabId, 'Page.enable'), 6000, 'Page.enable timed out');
-    await withTimeout(debuggerSendEnsured(tabId, 'Runtime.enable'), 6000, 'Runtime.enable timed out');
+    // Brief font/layout stabilization
     try {
       await withTimeout(debuggerSendEnsured(tabId, 'Runtime.evaluate', {
         expression:
-          '(async () => { const sleep = ms => new Promise(r => setTimeout(r, ms)); try { if (document.fonts && document.fonts.ready) await Promise.race([document.fonts.ready, sleep(2500)]); } catch (_) {} await Promise.race([new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))), sleep(2500)]); return true; })()',
+          '(async()=>{try{if(document.fonts&&document.fonts.ready)await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,500))])}catch(_){}await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));return true})()',
         awaitPromise: true,
         returnByValue: true
-      }), 7000, 'Waiting for fonts/layout timed out');
+      }), 2000, 'Font wait timed out');
     } catch (_) {
       // ignore: printing will still proceed
     }
-    reportSafe('Printing to PDF...');
+
+    reportSafe('\u6b63\u5728\u751f\u6210 PDF...');
     const result = await withTimeout(debuggerSendEnsured(tabId, 'Page.printToPDF', {
       printBackground: true,
       preferCSSPageSize: true,
@@ -480,12 +473,11 @@ async function printToPdfAndDownload(sourceTabId, dialogues, filename, report) {
       marginBottom: 0.4,
       marginLeft: 0.4,
       marginRight: 0.4
-    }), 120000, 'printToPDF timed out');
+    }), 60000, 'printToPDF timed out');
 
     const bytes = fromBase64(result.data);
     const blob = new Blob([bytes], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
-    reportSafe('Starting download...');
     const finalName = filename || `gpt_dialogues_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pdf`;
     try {
       await withTimeout(
@@ -499,7 +491,6 @@ async function printToPdfAndDownload(sourceTabId, dialogues, filename, report) {
       );
     } catch (e) {
       // Some Chrome builds reject blob: URLs in chrome.downloads.download. Fall back to <a download>.
-      reportSafe('Downloads API failed; falling back...');
       const a = document.createElement('a');
       a.href = url;
       a.download = finalName;
@@ -512,7 +503,7 @@ async function printToPdfAndDownload(sourceTabId, dialogues, filename, report) {
     }
   } finally {
     if (debuggerAttached) {
-      await withTimeout(debuggerDetachAsync(tabId), 6000, 'Detach timed out');
+      await withTimeout(debuggerDetachAsync(tabId), 3000, 'Detach timed out');
     }
     await cleanupSourcePrintDom(tabId);
   }
@@ -550,18 +541,17 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    subtitle.textContent = `Total: ${dialogues.length}`;
+    subtitle.textContent = `\u5171 ${dialogues.length} \u6761\u5bf9\u8bdd`;
     container.innerHTML = buildHtml(dialogues);
-    // Hide the quick mode by default; only show it when print-to-PDF fails.
     if (openBtn) openBtn.style.display = 'none';
-    setStatus("Preview ready. Click High-quality download to generate and download the PDF.");
+    setStatus('\u6b63\u5728\u51c6\u5907\u81ea\u52a8\u751f\u6210 PDF...');
 
     printToPdfBtn.addEventListener('click', async () => {
       if (isGenerating) return;
       isGenerating = true;
       printToPdfBtn.disabled = true;
       openBtn.disabled = true;
-      setStatus('Generating PDF (high quality)...');
+      setStatus('\u6b63\u5728\u751f\u6210\u9ad8\u8d28\u91cf PDF...');
       try {
         const filename = `gpt_dialogues_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pdf`;
         const tabId = Number(sourceTabId);
@@ -569,7 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
         await printToPdfAndDownload(tabId, dialogues, filename, setStatus);
         chrome.storage.local.remove(storageKey);
         printToPdfBtn.disabled = true;
-        setStatus('Download started (high quality).');
+        setStatus('\u4e0b\u8f7d\u5df2\u5f00\u59cb');
       } catch (e) {
         if (openBtn) openBtn.style.display = '';
         setStatus('Failed: ' + (e?.message || String(e)));
@@ -580,15 +570,41 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Note: Do not auto-start PDF generation. Some Chrome APIs behave better with a user gesture,
-    // and users may want to review before generating.
+    // Auto-start PDF generation with html2pdf after a brief render delay
+    setTimeout(async () => {
+      if (isGenerating) return;
+      isGenerating = true;
+      printToPdfBtn.disabled = true;
+      openBtn.disabled = true;
+      setStatus('\u6b63\u5728\u81ea\u52a8\u751f\u6210 PDF...');
+      try {
+        const { blob, filename } = await generatePdfBlob(container);
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename || 'gpt_dialogues.pdf';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        chrome.storage.local.remove(storageKey);
+        setStatus('\u4e0b\u8f7d\u5df2\u5f00\u59cb');
+      } catch (e) {
+        setStatus('\u81ea\u52a8\u751f\u6210\u5931\u8d25: ' + (e?.message || String(e)));
+        if (openBtn) openBtn.style.display = '';
+      } finally {
+        isGenerating = false;
+        openBtn.disabled = false;
+        printToPdfBtn.disabled = false;
+      }
+    }, 600);
 
     openBtn.addEventListener('click', async () => {
       if (isGenerating) return;
       isGenerating = true;
       openBtn.disabled = true;
       printToPdfBtn.disabled = true;
-      setStatus('Generating PDF (quick mode)...');
+      setStatus('\u6b63\u5728\u751f\u6210\u5feb\u901f PDF...');
       try {
         const { blob, filename } = await generatePdfBlob(container);
         const url = URL.createObjectURL(blob);
@@ -602,7 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
         URL.revokeObjectURL(url);
         chrome.storage.local.remove(storageKey);
 
-        setStatus('Download started.');
+        setStatus('\u4e0b\u8f7d\u5df2\u5f00\u59cb');
       } catch (e) {
         setStatus('Failed: ' + (e?.message || String(e)));
       } finally {

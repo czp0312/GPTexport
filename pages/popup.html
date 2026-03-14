@@ -3,74 +3,140 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GPT &#x5BF9;&#x8BDD;&#x5BFC;&#x51FA;</title>
+  <title>GPT Export</title>
   <style>
     :root {
-      --bg0: #f7f8ff;
-      --bg1: #f6fbff;
-      --card: rgba(255, 255, 255, 0.92);
-      --border: rgba(17, 24, 39, 0.10);
-      --text: #111827;
-      --muted: #6b7280;
-      --shadow: 0 10px 30px rgba(17, 24, 39, 0.10);
-      --shadow-sm: 0 6px 16px rgba(17, 24, 39, 0.10);
-      --radius: 14px;
-
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
+      --bg: #fafaf9;
+      --bg-card: #ffffff;
+      --border: #e7e5e4;
+      --border-light: #f5f5f4;
+      --text: #1c1917;
+      --text-secondary: #78716c;
+      --text-tertiary: #a8a29e;
+      --accent: #4f46e5;
+      --radius: 10px;
+      --radius-sm: 6px;
+      --shadow-sm: 0 1px 2px rgba(28,25,23,0.04);
+      --shadow: 0 1px 3px rgba(28,25,23,0.06), 0 1px 2px rgba(28,25,23,0.04);
     }
 
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     html {
-      width: 350px;
-      height: 560px;
+      width: 360px;
+      height: 540px;
       overflow: hidden;
     }
 
     body {
-      width: 350px;
+      width: 360px;
+      height: 540px;
       padding: 14px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-      margin: 0;
-      background: radial-gradient(120% 90% at 10% 0%, var(--bg1), transparent 55%),
-                  radial-gradient(120% 90% at 100% 20%, var(--bg0), transparent 55%),
-                  linear-gradient(180deg, #ffffff, #f7fafc);
-      height: 560px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
       overflow: hidden;
-      box-sizing: border-box;
       display: flex;
       flex-direction: column;
       color: var(--text);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
 
-    h1 {
-      font-size: 16px;
-      margin: 0;
-      letter-spacing: 0.2px;
-    }
-
+    /* ── Header ── */
     .header {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-sm);
-      padding: 12px 12px 10px;
-      margin-bottom: 10px;
-    }
-
-    .header-top {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      padding-bottom: 12px;
+      margin-bottom: 8px;
     }
 
-    .subtitle {
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .brand-mark {
+      width: 26px;
+      height: 26px;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 3px rgba(79,70,229,0.3);
+    }
+
+    .brand-mark svg {
+      width: 14px;
+      height: 14px;
+      color: #fff;
+    }
+
+    .brand-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .select-btn {
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      line-height: 1.4;
+    }
+
+    .select-btn:hover {
+      color: var(--text);
+      border-color: #d6d3d1;
+      background: var(--border-light);
+    }
+
+    .select-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* ── Status ── */
+    .status {
+      padding: 7px 12px;
+      border-radius: 8px;
+      text-align: center;
+      display: none;
       font-size: 12px;
-      color: var(--muted);
-      margin-top: 4px;
-      line-height: 1.3;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+      margin-bottom: 8px;
+      font-weight: 500;
     }
 
+    .success {
+      display: block;
+      color: #15803d;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+    }
+
+    .error {
+      display: block;
+      color: #dc2626;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+    }
+
+    /* ── Controls ── */
     .controls {
       display: flex;
       flex-direction: column;
@@ -79,154 +145,61 @@
       min-height: 0;
     }
 
-    .selection-controls {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    button {
-      padding: 10px 12px;
-      border: 1px solid transparent;
-      border-radius: 12px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      transition: transform 0.05s ease, background-color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-      user-select: none;
-    }
-
-    button:active {
-      transform: translateY(1px);
-    }
-
-    button:focus-visible {
-      outline: 2px solid rgba(37, 99, 235, 0.45);
-      outline-offset: 2px;
-    }
-
-    .select-btn {
-      background: rgba(37, 99, 235, 0.08);
-      color: var(--primary);
-      border-color: rgba(37, 99, 235, 0.20);
-      flex: 1;
-    }
-
-    .select-btn:hover {
-      background: rgba(37, 99, 235, 0.12);
-      border-color: rgba(37, 99, 235, 0.26);
-    }
-
-    .export-section {
-      margin-top: 2px;
-    }
-
-    .format-selection {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-    }
-
-    .format-btn {
-      background: var(--primary);
-      color: #fff;
-      flex: 1;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .format-btn:hover {
-      background: var(--primary-hover);
-    }
-
-    .format-btn.json {
-      background: #0f172a;
-    }
-
-    .format-btn.json:hover {
-      background: #111827;
-    }
-
-    .format-btn.md {
-      background: #7c3aed;
-    }
-
-    .format-btn.md:hover {
-      background: #6d28d9;
-    }
-
-    .format-btn.pdf {
-      background: #ea580c;
-    }
-
-    .format-btn.pdf:hover {
-      background: #c2410c;
-    }
-
-    .status {
-      padding: 10px 12px;
-      border-radius: 12px;
-      text-align: center;
-      display: none;
-      border: 1px solid var(--border);
-      background: var(--card);
-      box-shadow: var(--shadow-sm);
-      font-size: 13px;
-    }
-
-    .success {
-      border-color: rgba(34, 197, 94, 0.25);
-      color: #166534;
-      display: block;
-    }
-
-    .error {
-      border-color: rgba(239, 68, 68, 0.25);
-      color: #7f1d1d;
-      display: block;
-    }
-
+    /* ── Dialogue List ── */
     .dialogue-list {
       flex: 1;
       min-height: 0;
       overflow-y: auto;
+      background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 10px;
-      background: var(--card);
+      padding: 4px;
       box-shadow: var(--shadow-sm);
     }
 
     .dialogue-item {
       display: flex;
       align-items: flex-start;
-      gap: 10px;
-      padding: 10px 10px;
-      border-radius: 12px;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      transition: background 0.12s ease;
+      margin-bottom: 2px;
+      border-left: 3px solid transparent;
+    }
+
+    .dialogue-item:last-child { margin-bottom: 0; }
+
+    .dialogue-item.role-user-item {
+      border-left-color: #818cf8;
+    }
+
+    .dialogue-item.role-assistant-item {
+      border-left-color: #5eead4;
     }
 
     .dialogue-item:hover {
-      background: rgba(17, 24, 39, 0.04);
+      background: var(--bg);
     }
 
     .dialogue-checkbox {
-      margin-top: 4px;
+      margin-top: 2px;
       flex-shrink: 0;
-      width: 16px;
-      height: 16px;
-      accent-color: var(--primary);
+      width: 15px;
+      height: 15px;
+      accent-color: var(--accent);
+      cursor: pointer;
     }
 
     .dialogue-content {
       flex: 1;
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-      white-space: normal;
-      line-height: 1.4;
-      font-size: 13px;
+      min-width: 0;
+      line-height: 1.35;
+      font-size: 12px;
       color: var(--text);
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 3px;
       cursor: pointer;
     }
 
@@ -237,79 +210,140 @@
     }
 
     .role-badge {
-      display: inline-flex;
-      align-items: center;
-      height: 18px;
-      padding: 0 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-      border: 1px solid var(--border);
-      background: rgba(17, 24, 39, 0.04);
-      color: var(--muted);
-      width: fit-content;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 7px;
+      border-radius: 4px;
+      line-height: 1.5;
     }
 
     .role-user {
-      background: rgba(37, 99, 235, 0.10);
-      border-color: rgba(37, 99, 235, 0.22);
-      color: var(--primary);
+      color: #4f46e5;
+      background: #eef2ff;
     }
 
     .role-assistant {
-      background: rgba(124, 58, 237, 0.10);
-      border-color: rgba(124, 58, 237, 0.22);
-      color: #6d28d9;
+      color: #0d9488;
+      background: #f0fdfa;
     }
 
     .preview-text {
-      color: var(--text);
+      color: var(--text-secondary);
+      font-size: 11px;
       display: -webkit-box;
-      -webkit-line-clamp: 3;
+      -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      line-height: 1.45;
     }
 
     #noDialogues {
       margin: 0;
-      padding: 10px 12px;
-      color: var(--muted);
+      padding: 48px 16px 36px;
+      color: var(--text-tertiary);
       font-size: 13px;
       text-align: center;
+      line-height: 1.7;
     }
 
-    .dialogue-list::-webkit-scrollbar { width: 10px; }
-    .dialogue-list::-webkit-scrollbar-thumb { background: rgba(17, 24, 39, 0.12); border-radius: 999px; border: 3px solid rgba(255,255,255,0); background-clip: padding-box; }
+    /* ── Export Buttons ── */
+    .export-section { flex-shrink: 0; }
+
+    .format-selection {
+      display: flex;
+      gap: 7px;
+    }
+
+    .format-btn {
+      flex: 1;
+      font-weight: 600;
+      padding: 10px 6px;
+      font-size: 12.5px;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      text-align: center;
+      border: 1.5px solid;
+      letter-spacing: -0.01em;
+      line-height: 1;
+      font-family: inherit;
+    }
+
+    .format-btn:hover { transform: translateY(-1px); }
+    .format-btn:active { transform: translateY(0) scale(0.97); }
+
+    .format-btn.json {
+      background: #fffbeb;
+      color: #b45309;
+      border-color: #fde68a;
+    }
+    .format-btn.json:hover {
+      background: #fef3c7;
+      border-color: #fbbf24;
+      box-shadow: 0 2px 8px rgba(217,119,6,0.12);
+    }
+
+    .format-btn.md {
+      background: #ecfdf5;
+      color: #047857;
+      border-color: #a7f3d0;
+    }
+    .format-btn.md:hover {
+      background: #d1fae5;
+      border-color: #34d399;
+      box-shadow: 0 2px 8px rgba(5,150,105,0.12);
+    }
+
+    .format-btn.pdf {
+      background: #fff1f2;
+      color: #be123c;
+      border-color: #fecdd3;
+    }
+    .format-btn.pdf:hover {
+      background: #ffe4e6;
+      border-color: #fb7185;
+      box-shadow: 0 2px 8px rgba(225,29,72,0.12);
+    }
+
+    /* ── Scrollbar ── */
+    .dialogue-list::-webkit-scrollbar { width: 5px; }
+    .dialogue-list::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 3px; }
+    .dialogue-list::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
     .dialogue-list::-webkit-scrollbar-track { background: transparent; }
   </style>
 </head>
 <body>
   <div class="header">
-    <div class="header-top">
-      <h1>GPT &#x5BF9;&#x8BDD;&#x5BFC;&#x51FA;</h1>
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </div>
+      <span class="brand-name">GPT Export</span>
     </div>
-    <div class="subtitle">&#x52FE;&#x9009;&#x8981;&#x5BFC;&#x51FA;&#x7684;&#x5BF9;&#x8BDD;&#xFF0C;&#x7136;&#x540E;&#x9009;&#x62E9;&#x5BFC;&#x51FA;&#x683C;&#x5F0F;&#x3002;</div>
+    <div class="header-actions">
+      <button id="selectAllBtn" class="select-btn">&#x5168;&#x9009;</button>
+      <button id="unselectAllBtn" class="select-btn">&#x6E05;&#x9664;</button>
+    </div>
   </div>
 
-  <div class="controls">
-    <div class="selection-controls">
-      <button id="selectAllBtn" class="select-btn">&#x5168;&#x9009;</button>
-      <button id="unselectAllBtn" class="select-btn">&#x53D6;&#x6D88;&#x5168;&#x9009;</button>
-    </div>
+  <div id="statusMessage" class="status"></div>
 
+  <div class="controls">
     <div class="dialogue-list" id="dialogueList">
       <p id="noDialogues">&#x6682;&#x65E0;&#x5BF9;&#x8BDD;&#x5185;&#x5BB9;</p>
     </div>
 
     <div class="export-section">
       <div class="format-selection">
-        <button id="exportJsonBtn" class="format-btn json">&#x5BFC;&#x51FA; JSON</button>
-        <button id="exportMdBtn" class="format-btn md">&#x5BFC;&#x51FA; MD</button>
-        <button id="exportPdfBtn" class="format-btn pdf">&#x5BFC;&#x51FA; PDF</button>
+        <button id="exportJsonBtn" class="format-btn json">JSON</button>
+        <button id="exportMdBtn" class="format-btn md">Markdown</button>
+        <button id="exportPdfBtn" class="format-btn pdf">PDF</button>
       </div>
     </div>
-
-    <div id="statusMessage" class="status"></div>
   </div>
 
   <script src="../src/popup.js"></script>
