@@ -560,6 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.storage.local.remove(storageKey);
         printToPdfBtn.disabled = true;
         setStatus('\u4e0b\u8f7d\u5df2\u5f00\u59cb');
+        setTimeout(() => window.close(), 1500);
       } catch (e) {
         if (openBtn) openBtn.style.display = '';
         setStatus('Failed: ' + (e?.message || String(e)));
@@ -589,6 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => URL.revokeObjectURL(url), 10000);
         chrome.storage.local.remove(storageKey);
         setStatus('\u4e0b\u8f7d\u5df2\u5f00\u59cb');
+        setTimeout(() => window.close(), 1500);
       } catch (e) {
         setStatus('\u81ea\u52a8\u751f\u6210\u5931\u8d25: ' + (e?.message || String(e)));
         if (openBtn) openBtn.style.display = '';
@@ -619,6 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.storage.local.remove(storageKey);
 
         setStatus('\u4e0b\u8f7d\u5df2\u5f00\u59cb');
+        setTimeout(() => window.close(), 1500);
       } catch (e) {
         setStatus('Failed: ' + (e?.message || String(e)));
       } finally {
