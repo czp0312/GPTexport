@@ -3,10 +3,10 @@
 const DEFAULT_SETTINGS = {
   defaultFormat: 'json',
   fileNamePrefix: 'gpt_conversation',
-  autoOpenAfterExport: false,
   enableChatGPT: true,
   enableGemini: true,
-  enableBing: true
+  enableBing: true,
+  enableCopilot: true
 };
 
 function showStatus(message, type) {
@@ -25,10 +25,10 @@ function loadSettings() {
   chrome.storage.sync.get(DEFAULT_SETTINGS, items => {
     document.getElementById('defaultFormat').value = items.defaultFormat;
     document.getElementById('fileNamePrefix').value = items.fileNamePrefix;
-    document.getElementById('autoOpenAfterExport').checked = !!items.autoOpenAfterExport;
     document.getElementById('enableChatGPT').checked = !!items.enableChatGPT;
     document.getElementById('enableGemini').checked = !!items.enableGemini;
     document.getElementById('enableBing').checked = !!items.enableBing;
+    document.getElementById('enableCopilot').checked = !!items.enableCopilot;
   });
 }
 
@@ -36,10 +36,10 @@ function saveSettings() {
   const settings = {
     defaultFormat: document.getElementById('defaultFormat').value,
     fileNamePrefix: document.getElementById('fileNamePrefix').value,
-    autoOpenAfterExport: !!document.getElementById('autoOpenAfterExport').checked,
     enableChatGPT: !!document.getElementById('enableChatGPT').checked,
     enableGemini: !!document.getElementById('enableGemini').checked,
-    enableBing: !!document.getElementById('enableBing').checked
+    enableBing: !!document.getElementById('enableBing').checked,
+    enableCopilot: !!document.getElementById('enableCopilot').checked
   };
 
   chrome.storage.sync.set(settings, () => {

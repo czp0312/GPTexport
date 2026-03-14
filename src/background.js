@@ -40,12 +40,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return;
   }
 
-  if (request && request.action === 'exportComplete') {
-    console.log('[gpt-export] export complete');
-    sendResponse({ ok: true });
-    return;
-  }
-
   // keep channel behavior consistent
   sendResponse({ ok: false });
 });

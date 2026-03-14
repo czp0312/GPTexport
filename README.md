@@ -84,7 +84,6 @@ GPTexport/
 | 权限 | 用途 |
 |------|------|
 | `activeTab` + `scripting` | 读取当前页面对话内容 |
-| `downloads` | 下载导出文件 |
 | `storage` | 传递 PDF 任务数据、保存设置 |
 
 所有数据在本地处理，不上传任何服务器。

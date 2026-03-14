@@ -9,17 +9,60 @@ const SUPPORTED_HOSTS = [
   'copilot.microsoft.com'
 ];
 
+const DEFAULT_SETTINGS = {
+  defaultFormat: 'json',
+  fileNamePrefix: 'gpt_conversation',
+  enableChatGPT: true,
+  enableGemini: true,
+  enableBing: true,
+  enableCopilot: true
+};
+
+const HOST_SETTING_KEYS = {
+  'chat.openai.com': 'enableChatGPT',
+  'chatgpt.com': 'enableChatGPT',
+  'gemini.google.com': 'enableGemini',
+  'www.bing.com': 'enableBing',
+  'bing.com': 'enableBing',
+  'copilot.microsoft.com': 'enableCopilot'
+};
+
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function escapeHtml(text) {
-  return String(text || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+function getSyncSettings() {
+  return new Promise(resolve => {
+    chrome.storage.sync.get(DEFAULT_SETTINGS, items => {
+      if (chrome.runtime.lastError) {
+        resolve({ ...DEFAULT_SETTINGS });
+        return;
+      }
+      resolve({ ...DEFAULT_SETTINGS, ...items });
+    });
+  });
+}
+
+function sanitizeFilename(name) {
+  // Remove invalid filename characters and limit length
+  return String(name || '')
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/_{2,}/g, '_')
+    .replace(/^_|_$/g, '')
+    .slice(0, 60);
+}
+
+function buildFilenameBase(title) {
+  const prefix = sanitizeFilename(_settings.fileNamePrefix || '');
+  const safeTitle = sanitizeFilename(title);
+  const parts = [prefix, safeTitle].filter(Boolean);
+  return (parts.join('_') || 'gpt_dialogues').slice(0, 100);
+}
+
+function generateFilename(title, ext) {
+  const dateStr = new Date().toISOString().slice(0, 10);
+  return `${buildFilenameBase(title)}_${dateStr}.${ext}`;
 }
 
 function showStatus(message, type, duration) {
@@ -33,6 +76,37 @@ function showStatus(message, type, duration) {
     showStatus._t = setTimeout(() => {
       statusEl.style.display = 'none';
     }, typeof duration === 'number' ? duration : 2000);
+  }
+}
+
+function isHostEnabled(hostname) {
+  const key = HOST_SETTING_KEYS[hostname];
+  return key ? _settings[key] !== false : false;
+}
+
+function toggleExportButtons(disabled) {
+  document.querySelectorAll('.format-btn').forEach(btn => {
+    btn.disabled = disabled;
+  });
+}
+
+function applyDefaultFormatPreference() {
+  const buttonMap = {
+    json: document.getElementById('exportJsonBtn'),
+    md: document.getElementById('exportMdBtn'),
+    pdf: document.getElementById('exportPdfBtn')
+  };
+
+  Object.values(buttonMap).forEach(btn => {
+    if (!btn) return;
+    btn.classList.remove('is-default');
+    btn.removeAttribute('title');
+  });
+
+  const defaultBtn = buttonMap[_settings.defaultFormat];
+  if (defaultBtn) {
+    defaultBtn.classList.add('is-default');
+    defaultBtn.title = '\u9ed8\u8ba4\u5bfc\u51fa\u683c\u5f0f';
   }
 }
 
@@ -109,6 +183,8 @@ function populateDialogueList(dialogues) {
 }
 
 let _sourceTab = null;
+let _chatTitle = '';
+let _settings = { ...DEFAULT_SETTINGS };
 
 async function getSourceTab() {
   if (_sourceTab) return _sourceTab;
@@ -131,106 +207,6 @@ async function getSourceTab() {
   );
   _sourceTab = tabs?.[0] || null;
   return _sourceTab;
-}
-
-/* --- PDF generation (html2pdf.js, no debugger banner) --- */
-
-function looksLikeRichHtml(html) {
-  if (!html || typeof html !== 'string') return false;
-  return /<(p|div|span|pre|code|ul|ol|li|h[1-6]|blockquote|table|img|a)\b/i.test(html.trim());
-}
-
-function sanitizeHtmlFragment(html) {
-  if (!looksLikeRichHtml(html)) return '<div class="plain">' + escapeHtml(html || '') + '</div>';
-  const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
-  const root = doc.body;
-  root.querySelectorAll('script,style,iframe,object,embed,link,meta,button,textarea,input,select,svg,[role="button"],[data-testid="copy-button"]').forEach(el => el.remove());
-  const isSafeUrl = u => { const s = String(u || '').trim().toLowerCase(); return s.startsWith('http://') || s.startsWith('https://') || s.startsWith('data:image/') || s.startsWith('blob:'); };
-  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
-  while (walker.nextNode()) {
-    const el = walker.currentNode;
-    for (const attr of Array.from(el.attributes)) {
-      const n = attr.name.toLowerCase();
-      if (n.startsWith('on') || n === 'srcdoc') el.removeAttribute(attr.name);
-      if (n === 'href' && !isSafeUrl(attr.value)) el.removeAttribute(attr.name);
-      if (n === 'src' && !isSafeUrl(attr.value)) el.removeAttribute(attr.name);
-    }
-    const cls = el.getAttribute('class') || '';
-    const inKatex = cls.includes('katex') || el.closest?.('.katex,.katex-display');
-    const inMjx = el.tagName.toLowerCase() === 'mjx-container' || el.closest?.('mjx-container');
-    if (!inKatex && !inMjx) el.removeAttribute('style');
-    el.removeAttribute('id');
-    if (el.hasAttribute('class') && !inKatex && !inMjx && !/\blanguage-[a-z0-9_-]+\b/i.test(cls) && !/\bhljs\b/i.test(cls)) el.removeAttribute('class');
-  }
-  root.querySelectorAll('annotation').forEach(a => a.remove());
-  return root.innerHTML;
-}
-
-function buildPdfHtml(dialogues) {
-  const safe = Array.isArray(dialogues) ? dialogues : [];
-  const css = [
-    '* { box-sizing: border-box; }',
-    '.doc-title { font-size: 11pt; font-weight: 600; margin: 0 0 8px; padding-bottom: 5px; border-bottom: 1px solid #e5e7eb; color: #111827; }',
-    '.role-label { font-size: 8pt; font-weight: 600; color: #6b7280; margin: 0 0 3px; }',
-    'section { margin: 10px 0 5px; }',
-    'section.user-section { background: #f9fafb; padding: 8px 10px; border-radius: 4px; }',
-    '.content { font-size: 9.5pt; line-height: 1.6; }',
-    'h1 { font-size: 13pt; font-weight: 700; margin: 14px 0 6px; }',
-    'h2 { font-size: 11pt; font-weight: 600; margin: 12px 0 5px; }',
-    'h3 { font-size: 10pt; font-weight: 600; margin: 10px 0 4px; }',
-    'h4 { font-size: 9.5pt; font-weight: 600; margin: 8px 0 3px; }',
-    'h5, h6 { font-size: 9.5pt; font-weight: 600; margin: 8px 0 3px; color: #555; }',
-    'p { margin: 4px 0; }',
-    'ul, ol { padding-left: 18px; margin: 3px 0; }',
-    'li { margin: 2px 0; }',
-    'code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 8.5pt; }',
-    'pre { background: #f6f8fa; padding: 10px; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; border: 1px solid #e5e7eb; }',
-    ':not(pre) > code { background: #f6f8fa; padding: 1px 4px; border-radius: 3px; }',
-    'blockquote { margin: 5px 0; padding-left: 10px; border-left: 3px solid #d1d5db; color: #555; }',
-    'hr { margin: 8px 0; border: 0; border-top: 1px solid #e5e7eb; }',
-    'a { color: #111827; text-decoration: underline; }',
-    'img { max-width: 100%; height: auto; }',
-    '.plain { white-space: pre-wrap; word-break: break-word; }',
-    'table { border-collapse: collapse; width: 100%; margin: 6px 0; }',
-    'th, td { border: 1px solid #d1d5db; padding: 4px 8px; text-align: left; font-size: 9pt; }',
-    'th { background: #f9fafb; font-weight: 600; }',
-    '.footer { margin-top: 14px; text-align: center; color: #9ca3af; font-size: 8pt; }',
-    '.katex, .katex-display { white-space: nowrap; }',
-    '.katex { display: inline-block; font: normal 1.1em serif; line-height: 1.2; }',
-    '.katex-display { display: block; margin: 10px 0; text-align: center; }'
-  ].join('\n');
-
-  let h = '<style>' + css + '</style>';
-  h += '<div class="doc-title">GPT \u5bf9\u8bdd\u8bb0\u5f55</div>';
-  for (let i = 0; i < safe.length; i++) {
-    const d = safe[i] || {};
-    const rl = String(d.role || '').toLowerCase();
-    const isUser = rl === 'user' || rl === 'human';
-    const roleLabel = isUser ? '\u7528\u6237' : '\u52a9\u624b';
-    const sectionCls = isUser ? ' class="user-section"' : '';
-    const body = sanitizeHtmlFragment(d.html || d.text || '');
-    h += '<section' + sectionCls + '><div class="role-label">' + roleLabel + '</div><div class="content">' + body + '</div></section>';
-  }
-  h += '<div class="footer">\u5bfc\u51fa\u4e8e ' + escapeHtml(new Date().toLocaleString('zh-CN')) + '</div>';
-  return h;
-}
-
-let _html2pdfLoadPromise = null;
-
-function loadHtml2Pdf() {
-  if (typeof html2pdf !== 'undefined') return Promise.resolve();
-  if (_html2pdfLoadPromise) return _html2pdfLoadPromise;
-  _html2pdfLoadPromise = new Promise((resolve, reject) => {
-    try {
-      const script = document.createElement('script');
-      script.src = chrome.runtime.getURL('vendor/html2pdf.bundle.min.js');
-      script.async = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Failed to load html2pdf'));
-      (document.head || document.documentElement).appendChild(script);
-    } catch (e) { reject(e); }
-  });
-  return _html2pdfLoadPromise;
 }
 
 function sendMessageAsync(tabId, message) {
@@ -558,7 +534,7 @@ function getSelectedDialoguesFromResponse(response) {
 
 function exportAsJSON(dialogues) {
   const data = JSON.stringify(dialogues, null, 2);
-  const filename = `gpt_dialogues_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+  const filename = generateFilename(_chatTitle, 'json');
   downloadTextFile(filename, 'application/json;charset=utf-8', data);
   showStatus(`\u5df2\u5bfc\u51fa ${dialogues.length} \u6761\u5bf9\u8bdd (JSON)`, 'success');
 }
@@ -572,20 +548,19 @@ function exportAsMarkdown(dialogues) {
     md += '\n\n';
   });
   md = normalizeMarkdown(md) + '\n';
-  const filename = `gpt_dialogues_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.md`;
+  const filename = generateFilename(_chatTitle, 'md');
   downloadTextFile(filename, 'text/markdown;charset=utf-8', md);
   showStatus(`\u5df2\u5bfc\u51fa ${dialogues.length} \u6761\u5bf9\u8bdd (MD)`, 'success');
 }
 
-async function exportAsPDF(dialogues) {
+async function exportAsPDF(dialogues, title) {
   showStatus('\u6b63\u5728\u51c6\u5907 PDF...', 'success', 0);
   try {
-    const tab = await getSourceTab();
     const jobId = Date.now() + '-' + Math.random().toString(36).slice(2, 8);
     const storageKey = 'pdfJob:' + jobId;
     await new Promise((resolve, reject) => {
       chrome.storage.local.set({
-        [storageKey]: { dialogues: dialogues, sourceTabId: tab?.id }
+        [storageKey]: { dialogues: dialogues, title: title || '' }
       }, () => {
         if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
         else resolve();
@@ -607,7 +582,15 @@ async function loadDialoguesForTab(tab) {
   } catch (_) {}
 
   if (!hostname || !SUPPORTED_HOSTS.includes(hostname)) {
+    toggleExportButtons(true);
     showStatus('\u5f53\u524d\u9875\u9762\u4e0d\u652f\u6301\u5bfc\u51fa', 'error');
+    return;
+  }
+
+  if (!isHostEnabled(hostname)) {
+    toggleExportButtons(true);
+    showStatus('\u8be5\u7ad9\u70b9\u5df2\u5728\u8bbe\u7f6e\u4e2d\u505c\u7528', 'error');
+    populateDialogueList([]);
     return;
   }
 
@@ -615,10 +598,13 @@ async function loadDialoguesForTab(tab) {
   try {
     const resp = await sendMessageWithAutoInject(tab.id, { action: 'getDialogues' }, 3);
     const dialogues = resp?.dialogues || [];
+    _chatTitle = resp?.title || '';
     populateDialogueList(dialogues);
+    toggleExportButtons(dialogues.length === 0);
     showStatus(`\u5df2\u8bc6\u522b ${dialogues.length} \u6761\u5bf9\u8bdd`, 'success');
   } catch (e) {
     console.warn('[gpt-export] load dialogues failed:', e);
+    toggleExportButtons(true);
     const detail = String(e?.message || '').slice(0, 160);
     showStatus(
       `\u65e0\u6cd5\u8fde\u63a5\u5230\u9875\u9762\uff0c\u8bf7\u5237\u65b0\u9875\u9762\u540e\u91cd\u8bd5${detail ? ` (${detail})` : ''}`,
@@ -631,6 +617,15 @@ async function exportSelected(format) {
   const tab = await getSourceTab();
   if (!tab?.id) {
     showStatus('Cannot get current tab.', 'error');
+    return;
+  }
+
+  let hostname = '';
+  try {
+    hostname = new URL(String(tab.url || '')).hostname || '';
+  } catch (_) {}
+  if (!hostname || !isHostEnabled(hostname)) {
+    showStatus('\u8be5\u7ad9\u70b9\u5df2\u5728\u8bbe\u7f6e\u4e2d\u505c\u7528', 'error');
     return;
   }
 
@@ -648,12 +643,18 @@ async function exportSelected(format) {
     return;
   }
 
+  // Update title from response if available
+  if (response?.title) _chatTitle = response.title;
+
   if (format === 'json') return exportAsJSON(selected);
   if (format === 'md') return exportAsMarkdown(selected);
-  if (format === 'pdf') return exportAsPDF(selected);
+  if (format === 'pdf') return exportAsPDF(selected, _chatTitle);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  _settings = await getSyncSettings();
+  applyDefaultFormatPreference();
+
   document.getElementById('selectAllBtn')?.addEventListener('click', () => {
     document.querySelectorAll('.dialogue-checkbox').forEach(cb => (cb.checked = true));
   });
@@ -664,10 +665,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('exportJsonBtn')?.addEventListener('click', () => exportSelected('json'));
   document.getElementById('exportMdBtn')?.addEventListener('click', () => exportSelected('md'));
   document.getElementById('exportPdfBtn')?.addEventListener('click', () => exportSelected('pdf'));
+  document.addEventListener('keydown', event => {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      event.preventDefault();
+      exportSelected(_settings.defaultFormat);
+    }
+  });
 
   const tab = await getSourceTab();
   if (!tab?.id) {
     showStatus('Cannot get current tab.', 'error');
+    toggleExportButtons(true);
     return;
   }
   await loadDialoguesForTab(tab);

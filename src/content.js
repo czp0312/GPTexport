@@ -3,6 +3,18 @@
   window.__gptExportContentScriptLoaded = true;
 
   const LOG_PREFIX = '[GPT Export]';
+  const DEFAULT_SETTINGS = {
+    enableChatGPT: true,
+    enableGemini: true,
+    enableBing: true,
+    enableCopilot: true
+  };
+  const PLATFORM_SETTING_KEYS = {
+    chatgpt: 'enableChatGPT',
+    gemini: 'enableGemini',
+    bing: 'enableBing',
+    copilot: 'enableCopilot'
+  };
 
   function log(...args) {
     try {
@@ -38,6 +50,94 @@
     out = out.trim();
     if (Number.isFinite(maxLength) && out.length > maxLength) out = out.slice(0, maxLength).trim();
     return out;
+  }
+
+  function extractChatGPTTitle() {
+    // ChatGPT title is usually in the page title or a specific element
+    var titleSelectors = [
+      'h1[data-testid="conversation-title"]',
+      '.truncate-title',
+      '[class*="conversation-title"]',
+      'nav[aria-label="Chat history"] button[data-state="active"] span'
+    ];
+    for (var i = 0; i < titleSelectors.length; i++) {
+      var el = document.querySelector(titleSelectors[i]);
+      if (el && el.textContent) {
+        var t = el.textContent.trim();
+        if (t && t.length > 0 && t.length < 200) return t;
+      }
+    }
+    // Fallback: extract from page title (usually "Title - ChatGPT")
+    var pageTitle = document.title || '';
+    var cleanTitle = pageTitle.replace(/\s*[-|]\s*(ChatGPT|OpenAI)\s*$/i, '').trim();
+    if (cleanTitle && cleanTitle.length > 0 && cleanTitle.length < 200) return cleanTitle;
+    return '';
+  }
+
+  function extractGeminiTitle() {
+    // Get current conversation ID from URL
+    var currentPath = location.pathname || '';
+    var match = currentPath.match(/\/app\/([a-f0-9]+)/i);
+    var currentId = match ? match[1] : null;
+
+    // Find the active conversation in sidebar by matching URL
+    if (currentId) {
+      var links = document.querySelectorAll('a[data-test-id="conversation"]');
+      for (var i = 0; i < links.length; i++) {
+        var href = links[i].getAttribute('href') || '';
+        if (href.indexOf(currentId) !== -1) {
+          var titleEl = links[i].querySelector('.conversation-title');
+          if (titleEl && titleEl.textContent) {
+            var t = titleEl.textContent.trim();
+            if (t && t.length > 0 && t.length < 200) return t;
+          }
+        }
+      }
+    }
+
+    // Fallback: try to find active/highlighted conversation
+    var activeSelectors = [
+      '.conversation-items-container.active .conversation-title',
+      '.conversation.active .conversation-title',
+      '[data-test-id="conversation"].active .conversation-title'
+    ];
+    for (var j = 0; j < activeSelectors.length; j++) {
+      var el = document.querySelector(activeSelectors[j]);
+      if (el && el.textContent) {
+        var t = el.textContent.trim();
+        if (t && t.length > 0 && t.length < 200) return t;
+      }
+    }
+
+    // Last fallback: page title
+    var pageTitle = document.title || '';
+    var cleanTitle = pageTitle.replace(/\s*[-|]\s*(Gemini|Google|Bard)\s*$/i, '').trim();
+    if (cleanTitle && cleanTitle.length > 0 && cleanTitle.length < 200) {
+      return cleanTitle;
+    }
+    return '';
+  }
+
+  function extractBingTitle() {
+    var pageTitle = document.title || '';
+    var cleanTitle = pageTitle.replace(/\s*[-|]\s*(Bing|Copilot|Microsoft)\s*$/i, '').trim();
+    if (cleanTitle && cleanTitle.length > 0 && cleanTitle.length < 200) return cleanTitle;
+    return '';
+  }
+
+  function extractTitle() {
+    var platform = detectPlatform();
+    try {
+      switch (platform) {
+        case 'chatgpt': return extractChatGPTTitle();
+        case 'gemini': return extractGeminiTitle();
+        case 'bing':
+        case 'copilot': return extractBingTitle();
+        default: return '';
+      }
+    } catch (e) {
+      return '';
+    }
   }
 
   function detectPlatform() {
@@ -137,7 +237,7 @@
         .filter(function(el) {
           if (el.closest('nav, [role=\"navigation\"], aside, [role=\"complementary\"], [role=\"tablist\"]')) return false;
           var txt = (el.innerText || el.textContent || '').trim();
-          return txt.length >= 20 && txt.length <= 8000;
+          return txt.length >= 1 && txt.length <= 8000;
         });
     }
 
@@ -150,7 +250,11 @@
       else if (tag === 'model-response') role = 'assistant';
 
       var text = extractTextForTurn(el);
-      if (!text || text.length < 20) continue;
+      if (!text) continue;
+      // Remove "你说" prefix from user messages in Gemini
+      if (role === 'user' && text.startsWith('\u4f60\u8bf4')) {
+        text = text.slice(2).trim();
+      }
       var html = extractHtmlForTurn(el) || text;
       dialogues.push({ role: role, text: text, html: html });
     }
@@ -218,7 +322,7 @@
     // Filter: non-empty and avoid consecutive duplicates
     const filtered = dialogues.filter((d, idx, arr) => {
       const t = String(d?.text || '').trim();
-      if (t.length < 5) return false;
+      if (t.length < 1) return false;
       const prev = idx > 0 ? String(arr[idx - 1]?.text || '').trim() : '';
       return t !== prev;
     });
@@ -245,17 +349,42 @@
 
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request?.action === 'getDialogues') {
-      extractDialoguesWithRetry(10, 800).then(dialogues => sendResponse({ dialogues }));
+      extractDialoguesWithRetry(10, 800).then(dialogues => sendResponse({ dialogues: dialogues, title: extractTitle() }));
       return true;
     }
     if (request?.action === 'getSelectedDialogues') {
-      extractDialoguesWithRetry(10, 800).then(dialogues => sendResponse({ selectedDialogues: dialogues }));
+      extractDialoguesWithRetry(10, 800).then(dialogues => sendResponse({ selectedDialogues: dialogues, title: extractTitle() }));
       return true;
     }
   });
 
   // Floating export button (bottom-right)
   let injectScheduled = false;
+  let buttonObserver = null;
+
+  function getCurrentPlatformSettingKey() {
+    return PLATFORM_SETTING_KEYS[detectPlatform()] || null;
+  }
+
+  function isCurrentPlatformEnabled() {
+    return new Promise(resolve => {
+      const settingKey = getCurrentPlatformSettingKey();
+      if (!settingKey) {
+        resolve(true);
+        return;
+      }
+
+      chrome.storage.sync.get(DEFAULT_SETTINGS, items => {
+        if (chrome.runtime.lastError) {
+          warn('Failed to read settings:', chrome.runtime.lastError.message);
+          resolve(true);
+          return;
+        }
+        resolve(items[settingKey] !== false);
+      });
+    });
+  }
+
   function scheduleInject() {
     if (injectScheduled) return;
     injectScheduled = true;
@@ -329,7 +458,32 @@
     (document.body || document.documentElement).appendChild(btn);
   }
 
-  const observer = new MutationObserver(() => scheduleInject());
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-  scheduleInject();
+  async function syncFloatingExportButton() {
+    const enabled = await isCurrentPlatformEnabled();
+    const existingBtn = document.querySelector('#gpt-export-extension-button');
+
+    if (!enabled) {
+      existingBtn?.remove();
+      if (buttonObserver) {
+        buttonObserver.disconnect();
+        buttonObserver = null;
+      }
+      return;
+    }
+
+    if (!buttonObserver) {
+      buttonObserver = new MutationObserver(() => scheduleInject());
+      buttonObserver.observe(document.documentElement, { childList: true, subtree: true });
+    }
+
+    scheduleInject();
+  }
+
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== 'sync') return;
+    if (!Object.keys(changes).some(key => Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS, key))) return;
+    syncFloatingExportButton();
+  });
+
+  syncFloatingExportButton();
 })();
