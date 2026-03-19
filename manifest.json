@@ -13,7 +13,8 @@
     "*://chatgpt.com/*",
     "*://gemini.google.com/*",
     "*://www.bing.com/*",
-    "*://copilot.microsoft.com/*"
+    "*://copilot.microsoft.com/*",
+    "*://claude.ai/*"
   ],
   "background": {
     "service_worker": "src/background.js"
@@ -34,7 +35,8 @@
         "*://chatgpt.com/*",
         "*://gemini.google.com/*",
         "*://www.bing.com/*",
-        "*://copilot.microsoft.com/*"
+        "*://copilot.microsoft.com/*",
+        "*://claude.ai/*"
       ],
       "js": ["src/content.js"],
       "run_at": "document_idle"

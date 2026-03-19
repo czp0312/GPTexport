@@ -6,7 +6,8 @@ const DEFAULT_SETTINGS = {
   enableChatGPT: true,
   enableGemini: true,
   enableBing: true,
-  enableCopilot: true
+  enableCopilot: true,
+  enableClaude: true
 };
 
 function showStatus(message, type) {
@@ -29,6 +30,7 @@ function loadSettings() {
     document.getElementById('enableGemini').checked = !!items.enableGemini;
     document.getElementById('enableBing').checked = !!items.enableBing;
     document.getElementById('enableCopilot').checked = !!items.enableCopilot;
+    document.getElementById('enableClaude').checked = !!items.enableClaude;
   });
 }
 
@@ -39,7 +41,8 @@ function saveSettings() {
     enableChatGPT: !!document.getElementById('enableChatGPT').checked,
     enableGemini: !!document.getElementById('enableGemini').checked,
     enableBing: !!document.getElementById('enableBing').checked,
-    enableCopilot: !!document.getElementById('enableCopilot').checked
+    enableCopilot: !!document.getElementById('enableCopilot').checked,
+    enableClaude: !!document.getElementById('enableClaude').checked
   };
 
   chrome.storage.sync.set(settings, () => {

@@ -7,13 +7,15 @@
     enableChatGPT: true,
     enableGemini: true,
     enableBing: true,
-    enableCopilot: true
+    enableCopilot: true,
+    enableClaude: true
   };
   const PLATFORM_SETTING_KEYS = {
     chatgpt: 'enableChatGPT',
     gemini: 'enableGemini',
     bing: 'enableBing',
-    copilot: 'enableCopilot'
+    copilot: 'enableCopilot',
+    claude: 'enableClaude'
   };
 
   function log(...args) {
@@ -125,6 +127,13 @@
     return '';
   }
 
+  function extractClaudeTitle() {
+    var pageTitle = document.title || '';
+    var cleanTitle = pageTitle.replace(/\s*[-|]\s*Claude\s*$/i, '').trim();
+    if (cleanTitle && cleanTitle.length > 0 && cleanTitle.length < 200) return cleanTitle;
+    return '';
+  }
+
   function extractTitle() {
     var platform = detectPlatform();
     try {
@@ -133,6 +142,7 @@
         case 'gemini': return extractGeminiTitle();
         case 'bing':
         case 'copilot': return extractBingTitle();
+        case 'claude': return extractClaudeTitle();
         default: return '';
       }
     } catch (e) {
@@ -146,6 +156,7 @@
     if (host.includes('gemini.google.com')) return 'gemini';
     if (host.includes('bing.com')) return 'bing';
     if (host.includes('copilot.microsoft.com')) return 'copilot';
+    if (host.includes('claude.ai')) return 'claude';
     return 'generic';
   }
 
@@ -283,6 +294,69 @@
     return dialogues.slice(0, 200);
   }
 
+  function extractClaudeDialogues() {
+    // Claude.ai uses data-testid="user-message" for user turns
+    // and .font-claude-message for assistant turns
+    const userSelectors = [
+      '[data-testid="user-message"]',
+      '[data-testid^="user-human-turn"]'
+    ];
+    const assistantSelectors = [
+      '.font-claude-message',
+      '[class*="font-claude"]',
+      '[data-testid="assistant-message"]'
+    ];
+
+    const messages = [];
+
+    for (const sel of userSelectors) {
+      const els = document.querySelectorAll(sel);
+      for (const el of els) {
+        if (!messages.some(m => m.el.contains(el) || el.contains(m.el))) {
+          messages.push({ el, role: 'user' });
+        }
+      }
+    }
+
+    for (const sel of assistantSelectors) {
+      const els = document.querySelectorAll(sel);
+      for (const el of els) {
+        if (!messages.some(m => m.el.contains(el) || el.contains(m.el))) {
+          messages.push({ el, role: 'assistant' });
+        }
+      }
+    }
+
+    // Fallback: look for conversation turn containers
+    if (!messages.length) {
+      const turnContainers = document.querySelectorAll('[data-test-render-count], [class*="ConversationTurn"]');
+      for (const container of turnContainers) {
+        const isUser = container.querySelector('[data-testid="user-message"]');
+        const role = isUser ? 'user' : 'assistant';
+        messages.push({ el: container, role });
+      }
+    }
+
+    if (!messages.length) return [];
+
+    // Sort by DOM position
+    messages.sort((a, b) => {
+      const pos = a.el.compareDocumentPosition(b.el);
+      if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
+      if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1;
+      return 0;
+    });
+
+    const dialogues = [];
+    for (const msg of messages) {
+      const text = extractTextForTurn(msg.el);
+      if (!text) continue;
+      const html = extractHtmlForTurn(msg.el) || text;
+      dialogues.push({ role: msg.role, text, html });
+    }
+    return dialogues.slice(0, 200);
+  }
+
   function extractGenericDialogues() {
     const blocks = Array.from(document.querySelectorAll('article, [role=\"article\"], [class*=\"message\"], [class*=\"chat\"]'));
     const dialogues = [];
@@ -310,6 +384,9 @@
           break;
         case 'copilot':
           dialogues = extractCopilotDialogues();
+          break;
+        case 'claude':
+          dialogues = extractClaudeDialogues();
           break;
         default:
           dialogues = extractGenericDialogues();

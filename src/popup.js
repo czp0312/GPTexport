@@ -6,7 +6,8 @@ const SUPPORTED_HOSTS = [
   'gemini.google.com',
   'www.bing.com',
   'bing.com',
-  'copilot.microsoft.com'
+  'copilot.microsoft.com',
+  'claude.ai'
 ];
 
 const DEFAULT_SETTINGS = {
@@ -15,7 +16,8 @@ const DEFAULT_SETTINGS = {
   enableChatGPT: true,
   enableGemini: true,
   enableBing: true,
-  enableCopilot: true
+  enableCopilot: true,
+  enableClaude: true
 };
 
 const HOST_SETTING_KEYS = {
@@ -24,7 +26,8 @@ const HOST_SETTING_KEYS = {
   'gemini.google.com': 'enableGemini',
   'www.bing.com': 'enableBing',
   'bing.com': 'enableBing',
-  'copilot.microsoft.com': 'enableCopilot'
+  'copilot.microsoft.com': 'enableCopilot',
+  'claude.ai': 'enableClaude'
 };
 
 function delay(ms) {
@@ -75,7 +78,7 @@ function showStatus(message, type, duration) {
   if (duration !== 0) {
     showStatus._t = setTimeout(() => {
       statusEl.style.display = 'none';
-    }, typeof duration === 'number' ? duration : 2000);
+    }, typeof duration === 'number' ? duration : 1200);
   }
 }
 
@@ -671,6 +674,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       exportSelected(_settings.defaultFormat);
     }
   });
+
+
 
   const tab = await getSourceTab();
   if (!tab?.id) {

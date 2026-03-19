@@ -6,176 +6,202 @@
   <title>GPT Export</title>
   <style>
     :root {
-      --bg: #fafaf9;
-      --bg-card: #ffffff;
-      --border: #e7e5e4;
-      --border-light: #f5f5f4;
-      --text: #1c1917;
-      --text-secondary: #78716c;
-      --text-tertiary: #a8a29e;
-      --accent: #4f46e5;
-      --radius: 10px;
-      --radius-sm: 6px;
-      --shadow-sm: 0 1px 2px rgba(28,25,23,0.04);
-      --shadow: 0 1px 3px rgba(28,25,23,0.06), 0 1px 2px rgba(28,25,23,0.04);
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --user-bg: #eff6ff;
+      --user-text: #1d4ed8;
+      --ai-bg: #f0fdf4;
+      --ai-text: #15803d;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html {
-      width: 360px;
-      height: 540px;
+    html, body {
+      width: 380px;
+      height: 580px;
+      margin: 0;
+      padding: 0;
       overflow: hidden;
     }
 
     body {
-      width: 360px;
-      height: 540px;
-      padding: 14px;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg);
-      overflow: hidden;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
       display: flex;
       flex-direction: column;
-      color: var(--text);
-      line-height: 1.5;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Header ── */
-    .header {
+    /* Header */
+    .app-header {
+      background: var(--surface);
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding-bottom: 12px;
-      margin-bottom: 8px;
+      box-shadow: var(--shadow-sm);
+      z-index: 10;
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 9px;
+      gap: 12px;
     }
 
-    .brand-mark {
-      width: 26px;
-      height: 26px;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      border-radius: 7px;
+    .logo {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 1px 3px rgba(79,70,229,0.3);
+      box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
     }
 
-    .brand-mark svg {
-      width: 14px;
-      height: 14px;
-      color: #fff;
+    .logo svg {
+      width: 18px;
+      height: 18px;
+      color: white;
     }
 
-    .brand-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
+    .brand-title {
+      font-size: 16px;
+      font-weight: 700;
       letter-spacing: -0.02em;
+      color: var(--text-main);
     }
 
-    .header-actions {
+    /* Main Content Area */
+    .main-content {
+      flex: 1;
       display: flex;
-      gap: 4px;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 16px;
+      gap: 12px;
     }
 
-    .select-btn {
-      padding: 4px 10px;
-      font-size: 11px;
-      font-weight: 500;
-      border: 1px solid var(--border);
-      background: var(--bg-card);
-      color: var(--text-secondary);
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: all 0.15s ease;
-      line-height: 1.4;
+    /* List Controls */
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    .select-btn:hover {
-      color: var(--text);
-      border-color: #d6d3d1;
-      background: var(--border-light);
+    .list-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
     }
 
-    .select-btn:active {
-      transform: scale(0.97);
+    .list-actions {
+      display: flex;
+      gap: 8px;
     }
 
-    /* ── Status ── */
-    .status {
-      padding: 7px 12px;
-      border-radius: 8px;
-      text-align: center;
-      display: none;
+    .btn-text {
+      background: none;
+      border: none;
       font-size: 12px;
-      color: var(--text-secondary);
-      flex-shrink: 0;
-      margin-bottom: 8px;
       font-weight: 500;
+      color: var(--primary);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      transition: background 0.2s;
     }
 
-    .success {
+    .btn-text:hover {
+      background: var(--user-bg);
+    }
+
+    /* Status Message */
+    .status {
+      display: none;
+      position: absolute;
+      top: 80px;
+      left: 20px;
+      right: 20px;
+      z-index: 50;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+      animation: slideDown 0.3s ease;
+      box-shadow: var(--shadow-md);
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .status.success {
       display: block;
-      color: #15803d;
-      background: #f0fdf4;
+      background: rgba(220, 252, 231, 0.95);
+      backdrop-filter: blur(8px);
+      color: #166534;
       border: 1px solid #bbf7d0;
     }
 
-    .error {
+    .status.error {
       display: block;
-      color: #dc2626;
-      background: #fef2f2;
+      background: rgba(254, 226, 226, 0.95);
+      backdrop-filter: blur(8px);
+      color: #991b1b;
       border: 1px solid #fecaca;
     }
 
-    /* ── Controls ── */
-    .controls {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      flex: 1;
-      min-height: 0;
-    }
-
-    /* ── Dialogue List ── */
+    /* Dialogue List */
     .dialogue-list {
       flex: 1;
-      min-height: 0;
       overflow-y: auto;
-      background: var(--bg-card);
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 4px;
+      border-radius: var(--radius-md);
       box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .dialogue-list::-webkit-scrollbar { width: 6px; }
+    .dialogue-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .dialogue-list::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    #noDialogues {
+      margin: auto;
+      text-align: center;
+      color: var(--text-light);
+      font-size: 14px;
+      padding: 20px;
     }
 
     .dialogue-item {
       display: flex;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s;
       align-items: flex-start;
-      gap: 8px;
-      padding: 8px 10px;
-      border-radius: 8px;
-      transition: background 0.12s ease;
-      margin-bottom: 2px;
-      border-left: 3px solid transparent;
     }
 
-    .dialogue-item:last-child { margin-bottom: 0; }
-
-    .dialogue-item.role-user-item {
-      border-left-color: #818cf8;
-    }
-
-    .dialogue-item.role-assistant-item {
-      border-left-color: #5eead4;
+    .dialogue-item:last-child {
+      border-bottom: none;
     }
 
     .dialogue-item:hover {
@@ -183,177 +209,198 @@
     }
 
     .dialogue-checkbox {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid #cbd5e1;
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+      margin-right: 12px;
       margin-top: 2px;
       flex-shrink: 0;
-      width: 15px;
-      height: 15px;
-      accent-color: var(--accent);
-      cursor: pointer;
+    }
+
+    .dialogue-checkbox:checked {
+      background-color: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .dialogue-checkbox:checked::after {
+      content: '';
+      position: absolute;
+      left: 5px;
+      top: 1px;
+      width: 4px;
+      height: 9px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
     }
 
     .dialogue-content {
       flex: 1;
       min-width: 0;
-      line-height: 1.35;
-      font-size: 12px;
-      color: var(--text);
+      cursor: pointer;
       display: flex;
       flex-direction: column;
-      gap: 3px;
-      cursor: pointer;
+      gap: 6px;
     }
 
     .dialogue-meta {
       display: flex;
-      gap: 6px;
       align-items: center;
     }
 
     .role-badge {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 600;
-      padding: 1px 7px;
-      border-radius: 4px;
-      line-height: 1.5;
+      padding: 2px 8px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
-    .role-user {
-      color: #4f46e5;
-      background: #eef2ff;
-    }
-
-    .role-assistant {
-      color: #0d9488;
-      background: #f0fdfa;
-    }
+    .role-user { background: var(--user-bg); color: var(--user-text); }
+    .role-assistant { background: var(--ai-bg); color: var(--ai-text); }
 
     .preview-text {
-      color: var(--text-secondary);
-      font-size: 11px;
+      font-size: 13px;
+      color: var(--text-main);
+      line-height: 1.5;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
-      line-height: 1.45;
     }
 
-    #noDialogues {
-      margin: 0;
-      padding: 48px 16px 36px;
-      color: var(--text-tertiary);
-      font-size: 13px;
-      text-align: center;
-      line-height: 1.7;
+    /* Footer / Export Controls */
+    .app-footer {
+      padding: 12px 16px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.05);
+      z-index: 10;
     }
 
-    /* ── Export Buttons ── */
-    .export-section { flex-shrink: 0; }
+    .export-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
 
-    .format-selection {
+    .export-btn {
       display: flex;
-      gap: 7px;
-    }
-
-    .format-btn {
-      flex: 1;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 0;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
       font-weight: 600;
-      padding: 10px 6px;
-      font-size: 12.5px;
-      border-radius: 9px;
       cursor: pointer;
-      transition: all 0.18s ease;
-      text-align: center;
-      border: 1.5px solid;
-      letter-spacing: -0.01em;
-      line-height: 1;
-      font-family: inherit;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-main);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
     }
 
-    .format-btn:hover { transform: translateY(-1px); }
-    .format-btn:active { transform: translateY(0) scale(0.97); }
-    .format-btn:disabled {
-      opacity: 0.45;
+    .export-btn svg {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.2s;
+    }
+
+    .export-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .export-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .export-btn:disabled {
+      opacity: 0.5;
       cursor: not-allowed;
+      background: var(--bg);
       transform: none;
       box-shadow: none;
     }
-    .format-btn.is-default {
-      box-shadow: inset 0 0 0 1px rgba(28,25,23,0.08), 0 0 0 2px rgba(79,70,229,0.12);
-    }
 
-    .format-btn.json {
-      background: #fffbeb;
-      color: #b45309;
-      border-color: #fde68a;
-    }
-    .format-btn.json:hover {
-      background: #fef3c7;
-      border-color: #fbbf24;
-      box-shadow: 0 2px 8px rgba(217,119,6,0.12);
-    }
+    /* Specific Button Styles */
+    .export-btn.btn-json { border-color: #fde047; }
+    .export-btn.btn-json:hover:not(:disabled) { border-color: #eab308; background: #fefce8; color: #a16207; }
+    .export-btn.btn-json svg { color: #eab308; }
 
-    .format-btn.md {
-      background: #ecfdf5;
-      color: #047857;
-      border-color: #a7f3d0;
-    }
-    .format-btn.md:hover {
-      background: #d1fae5;
-      border-color: #34d399;
-      box-shadow: 0 2px 8px rgba(5,150,105,0.12);
-    }
+    .export-btn.btn-md { border-color: #86efac; }
+    .export-btn.btn-md:hover:not(:disabled) { border-color: #22c55e; background: #f0fdf4; color: #15803d; }
+    .export-btn.btn-md svg { color: #22c55e; }
 
-    .format-btn.pdf {
-      background: #fff1f2;
-      color: #be123c;
-      border-color: #fecdd3;
-    }
-    .format-btn.pdf:hover {
-      background: #ffe4e6;
-      border-color: #fb7185;
-      box-shadow: 0 2px 8px rgba(225,29,72,0.12);
-    }
+    .export-btn.btn-pdf { border-color: #fca5a5; }
+    .export-btn.btn-pdf:hover:not(:disabled) { border-color: #ef4444; background: #fef2f2; color: #b91c1c; }
+    .export-btn.btn-pdf svg { color: #ef4444; }
 
-    /* ── Scrollbar ── */
-    .dialogue-list::-webkit-scrollbar { width: 5px; }
-    .dialogue-list::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 3px; }
-    .dialogue-list::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
-    .dialogue-list::-webkit-scrollbar-track { background: transparent; }
+    .export-btn.is-default::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--primary);
+    }
   </style>
 </head>
 <body>
-  <div class="header">
+  <header class="app-header">
     <div class="brand">
-      <div class="brand-mark">
+      <div class="logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="7 10 12 15 17 10"/>
           <line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
       </div>
-      <span class="brand-name">GPT Export</span>
+      <span class="brand-title">GPT Export</span>
     </div>
-    <div class="header-actions">
-      <button id="selectAllBtn" class="select-btn">&#x5168;&#x9009;</button>
-      <button id="unselectAllBtn" class="select-btn">&#x6E05;&#x9664;</button>
-    </div>
-  </div>
+  </header>
 
-  <div id="statusMessage" class="status"></div>
-
-  <div class="controls">
-    <div class="dialogue-list" id="dialogueList">
-      <p id="noDialogues">&#x6682;&#x65E0;&#x5BF9;&#x8BDD;&#x5185;&#x5BB9;</p>
-    </div>
-
-    <div class="export-section">
-      <div class="format-selection">
-        <button id="exportJsonBtn" class="format-btn json">JSON</button>
-        <button id="exportMdBtn" class="format-btn md">Markdown</button>
-        <button id="exportPdfBtn" class="format-btn pdf">PDF</button>
+  <main class="main-content">
+    <div id="statusMessage" class="status"></div>
+    
+    <div class="list-header">
+      <span class="list-title">对话内容</span>
+      <div class="list-actions">
+        <button id="selectAllBtn" class="btn-text">全选</button>
+        <button id="unselectAllBtn" class="btn-text">清除</button>
       </div>
     </div>
-  </div>
+
+    <div class="dialogue-list" id="dialogueList">
+      <p id="noDialogues">暂无对话内容</p>
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    <div class="export-grid">
+      <button id="exportJsonBtn" class="export-btn btn-json">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        JSON
+      </button>
+      <button id="exportMdBtn" class="export-btn btn-md">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Markdown
+      </button>
+      <button id="exportPdfBtn" class="export-btn btn-pdf">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        PDF
+      </button>
+    </div>
+  </footer>
 
   <script src="../src/popup.js"></script>
 </body>
